@@ -9,16 +9,20 @@ def average(image, size):
         return
     else:
         offset = int(-(size - 1) / 2)
+        np_pixels = np.array(image.pixels)
+        temp_pixels = np.empty_like(np_pixels)
         for x in range(len(image.pixels)):
             for y in range(len(image.pixels[x])):
-                flat_array = np.array(image.pixels[np.clip(x+offset, 0, 255) : np.clip(x+size, 0, 255)][np.clip(y+offset, 0, 255) : np.clip(y+size, 0, 255)]).astype(int).flatten()
+                flat_array = np_pixels[np.clip(x+offset, 0, 255) : np.clip(x+size, 0, 255), np.clip(y+offset, 0, 255) : np.clip(y+size, 0, 255)].astype(int).flatten()
                 # print(str(np.clip(x+offset, 0, 255)) + " " + str(np.clip(x+size, 0, 255)))
                 # print(str(np.clip(y+offset, 0, 255)) + " " + str(np.clip(y+size, 0, 255)))
-                # print(mean(flat_array))
-                print(image.pixels[0:7][7:17])
+                temp_pixels[x][y] = mean(flat_array)
+        print(temp_pixels)
+        print(type(temp_pixels))
+        image.pixels = temp_pixels
+        image.save("_avg" + "_" + str(size))
 
 
 pgm = PGM("lenna")
-print(pgm.pixels[0:7][7])
-#average(pgm, 7)
-#pgm.save("_avg")
+average(pgm, 7)
+average(pgm, 15)

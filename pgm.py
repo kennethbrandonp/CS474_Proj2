@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import random
 from statistics import mean
 from matplotlib import pyplot as plt
 
@@ -37,7 +38,7 @@ class PGM():
         for x in range(self.x):
             self.pixels.append([])
             for y in range(self.y):
-                self.pixels[x].append(file.readline().strip('\n'))
+                self.pixels[x].append(int(file.readline().strip('\n')))
 
         # Create histogram
         self.pixels_flat = np.array(self.pixels).flatten().astype(np.int32)

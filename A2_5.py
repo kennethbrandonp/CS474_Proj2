@@ -3,29 +3,105 @@ from pgm import PGM
 from statistics import mean
 from scipy.ndimage import prewitt, sobel, laplace
 
+# Get section of array and pad edge values
+def get_section(arr, center, square_radius):
+    tp = max(0, -(center[0] - square_radius))
+    bp = max(0, -((arr.shape[0]-center[0]-1) - square_radius))
+    lp = max(0, -(center[1] - square_radius))
+    rp = max(0, -((arr.shape[1]-center[1]-1) - square_radius))
+    arr = np.pad(arr, [[tp, bp], [lp, rp]], 'edge')
+    return arr[center[0] - square_radius + tp:center[0] + square_radius + 1 + tp, \
+              center[1] - square_radius + lp:center[1] + square_radius + 1 + lp]
+
 # Prewitt mask
 def prewitt_mask(image):
-    np_pixels = np.array(image.pixels)
-    np_pixels = np_pixels.astype(int)
-    image.pixels = np.clip(prewitt(np_pixels), 0, 255)
-    image.save("_Prewitt_mask")
+    # Create Prewitt matrices
+    Gx = np.array([[-1, 0, 1],[-1, 0, 1],[-1, 0, 1]])
+    Gy = np.array([[-1, -1, -1],[0, 0, 0],[1, 1, 1]])
+    offset = 1
+    # Allocate partial derivative arrays
+    temp_pixels_x = np.zeros((image.x,image.y))
+    temp_pixels_y = np.zeros((image.x,image.y))
+    # Get pixels from image
+    np_pixels = np.array(image.pixels).astype(int)
+    # Iterate mask over entire image on both axes to generate partial derivatives
+    for x in range(len(image.pixels)):
+        for y in range(len(image.pixels[x])):
+            temp_array = get_section(np_pixels, [x,y], offset)
+            temp_pixels_x[x][y] = sum(sum(temp_array.astype(float) * Gx))
+            temp_pixels_y[x][y] = sum(sum(temp_array.astype(float) * Gy))
+
+    # Normalizing values from 0 to quantization max for X partial derivative
+    temp_pixels_x -= np.min(temp_pixels_x)
+    temp_pixels_x = ((temp_pixels_x / np.max(temp_pixels_x)) * (image.quantization - 1)).astype(int)
+    image.pixels = temp_pixels_x
+    image.save("_Prewitt_mask_X")
+
+    # Calculating Y partial derivative
+    # Normalizing values from 0 to quantization max for Y partial derivative
+    temp_pixels_y -= np.min(temp_pixels_y)
+    temp_pixels_y = ((temp_pixels_y / np.max(temp_pixels_y)) * (image.quantization - 1)).astype(int)
+    image.pixels = temp_pixels_y
+    image.save("_Prewitt_mask_Y")
+
+    # Calculating gradient magnitude
+    temp_pixels_xy = np.sqrt(np.power(temp_pixels_x, 2) + np.power(temp_pixels_y, 2))
+    # Normalizing values from 0 to quantization max
+    temp_pixels_xy -= np.min(temp_pixels_xy)
+    temp_pixels_xy = ((temp_pixels_xy / np.max(temp_pixels_xy)) * (image.quantization - 1)).astype(int)
+    image.pixels = temp_pixels_xy
+    image.save("_Prewitt_mask_XY")
 
 # Sobel mask
 def sobel_mask(image):
-    np_pixels = np.array(image.pixels)
-    np_pixels = np_pixels.astype(int)
-    image.pixels = np.clip(sobel(np_pixels), 0, 255)
-    image.save("_Sobel_mask")
+    # Create Sobel matrices
+    Gx = np.array([[-1, 0, 1],[-2, 0, 2],[-1, 0, 1]])
+    Gy = np.array([[-1, -2, -1],[0, 0, 0],[1, 2, 1]])
+    offset = 1
+    # Allocate partial derivative arrays
+    temp_pixels_x = np.zeros((image.x,image.y))
+    temp_pixels_y = np.zeros((image.x,image.y))
+    # Get pixels from image
+    np_pixels = np.array(image.pixels).astype(int)
+    # Iterate mask over entire image on both axes to generate partial derivatives
+    for x in range(len(image.pixels)):
+        for y in range(len(image.pixels[x])):
+            temp_array = get_section(np_pixels, [x,y], offset)
+            temp_pixels_x[x][y] = sum(sum(temp_array.astype(float) * Gx))
+            temp_pixels_y[x][y] = sum(sum(temp_array.astype(float) * Gy))
+
+    # Normalizing values from 0 to quantization max for X partial derivative
+    temp_pixels_x -= np.min(temp_pixels_x)
+    temp_pixels_x = ((temp_pixels_x / np.max(temp_pixels_x)) * (image.quantization - 1)).astype(int)
+    image.pixels = temp_pixels_x
+    image.save("_Sobel_mask_X")
+
+    # Calculating Y partial derivative
+    # Normalizing values from 0 to quantization max for Y partial derivative
+    temp_pixels_y -= np.min(temp_pixels_y)
+    temp_pixels_y = ((temp_pixels_y / np.max(temp_pixels_y)) * (image.quantization - 1)).astype(int)
+    image.pixels = temp_pixels_y
+    image.save("_Sobel_mask_Y")
+
+    # Calculating gradient magnitude
+    temp_pixels_xy = np.sqrt(np.power(temp_pixels_x, 2) + np.power(temp_pixels_y, 2))
+    # Normalizing values from 0 to quantization max
+    temp_pixels_xy -= np.min(temp_pixels_xy)
+    temp_pixels_xy = ((temp_pixels_xy / np.max(temp_pixels_xy)) * (image.quantization - 1)).astype(int)
+    image.pixels = temp_pixels_xy
+    image.save("_Sobel_mask_XY")
+
 
 # Laplacian mask
 def laplace_mask(image):
     np_pixels = np.array(image.pixels)
     np_pixels = np_pixels.astype(int)
-    image.pixels = np.clip(laplace(np_pixels), 0, 255)
+    image.pixels = np.clip(laplace(np_pixels), 0, image.quantization)
     print(image.pixels)
     image.save("_Laplacian_mask")
 
-pgm = PGM("lenna")
-prewitt_mask(pgm)
-sobel_mask(pgm)
-laplace_mask(pgm)
+# Define sobel kernels
+sobel_mask(PGM("lenna"))
+prewitt_mask(PGM("lenna"))
+sobel_mask(PGM("sf"))
+prewitt_mask(PGM("sf"))

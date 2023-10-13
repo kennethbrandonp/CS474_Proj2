@@ -14,12 +14,12 @@ def gaussian(image, size):
         # Create guassian mask with a sum of 1.0
         gauss_matrix = gaussian_matrix(size, sigma)
         np_pixels = np.array(image.pixels)
-        temp_pixels = np.zeros((256,256))
+        temp_pixels = np.zeros((image.x,image.y))
         for x in range(len(image.pixels)):
             for y in range(len(image.pixels[x])):
                 temp_array = get_section(np_pixels, [x,y], offset)
                 temp_pixels[x][y] = int(sum(sum(temp_array.astype(float) * gauss_matrix)))
-        return temp_pixels.astype(int)
+        return temp_pixels
 
 # Create gaussian mask with a sum of 1.0
 def gaussian_matrix(size, sigma):
@@ -42,19 +42,21 @@ def get_section(arr, center, square_radius):
 def high_boost(image, k):
     offset = 3
     size = 7
-    np_pixels = np.array(image.pixels)
-    np_pixels = np_pixels.astype(int)
-    lp_pixels = gaussian(image, size)
+    np_pixels = np.array(image.pixels).astype(float)
+    lp_pixels = gaussian(image, size).astype(float)
     mask = np_pixels - lp_pixels
-    image.pixels = np.clip((np_pixels + (k * mask).astype(int)), 0, 255)
+    np_pixels += (k * mask)
+    # Clip values from 0 to 255
+    np_pixels = np.clip(np_pixels, 0, (image.quantization - 1))
+    image.pixels = np_pixels.astype(int)
     image.save("_boost" + "_k" + str(k))
 
-high_boost(PGM("lenna"), 1.0)
-high_boost(PGM("lenna"), 1.3)
-high_boost(PGM("lenna"), 1.6)
+high_boost(PGM("lenna"), 1)
+high_boost(PGM("lenna"), 2)
+high_boost(PGM("lenna"), 3)
 
-high_boost(PGM("f_16"), 1.0)
-high_boost(PGM("f_16"), 1.3)
-high_boost(PGM("f_16"), 1.6)
+high_boost(PGM("f_16"), 1)
+high_boost(PGM("f_16"), 2)
+high_boost(PGM("f_16"), 3)
 
-# Note: They both look best with k=1.0
+# Note: Lenna looks best with k=1, f_16 looks best with k=2

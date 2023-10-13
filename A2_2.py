@@ -30,7 +30,7 @@ def gaussian(image, size):
         # Create guassian mask with a sum of 1.0
         gauss_matrix = gaussian_matrix(size, sigma)
         np_pixels = np.array(image.pixels)
-        temp_pixels = np.zeros((256,256))
+        temp_pixels = np.zeros((image.x,image.y))
         for x in range(len(image.pixels)):
             for y in range(len(image.pixels[x])):
                 temp_array = get_section(np_pixels, [x,y], offset)

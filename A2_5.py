@@ -139,7 +139,16 @@ def laplace_mask(image):
     temp_pixels_xy = np.zeros((image.x,image.y))
     # Get pixels from image and apply weak gaussian filter to reduce noise
     np_pixels = gaussian(image, 5).astype(int)
-    # Iterate mask over entire image on both axes to generate partial derivatives
+    # Iterate mask over entire image to generate first derivative
+    for x in range(len(image.pixels)):
+        for y in range(len(image.pixels[x])):
+            temp_array = get_section(np_pixels, [x,y], offset)
+            temp_pixels_xy[x][y] = sum(sum(temp_array.astype(float) * Gxy))
+    # Normalizing values from 0 to quantization max
+    temp_pixels_xy -= np.min(temp_pixels_xy)
+    temp_pixels_xy = ((temp_pixels_xy / np.max(temp_pixels_xy)) * (image.quantization - 1)).astype(int)
+    # Iterate mask over entire image to generate second derivative
+    np_pixels = temp_pixels_xy.astype(float)
     for x in range(len(image.pixels)):
         for y in range(len(image.pixels[x])):
             temp_array = get_section(np_pixels, [x,y], offset)
@@ -148,7 +157,7 @@ def laplace_mask(image):
     temp_pixels_xy -= np.min(temp_pixels_xy)
     temp_pixels_xy = ((temp_pixels_xy / np.max(temp_pixels_xy)) * (image.quantization - 1)).astype(int)
     # Combining filter and image to create sharpened image
-    combined_pixels = image.pixels - temp_pixels_xy
+    combined_pixels = image.pixels + temp_pixels_xy
     # Normalizing values from 0 to quantization max
     combined_pixels -= np.min(combined_pixels)
     combined_pixels = ((combined_pixels / np.max(combined_pixels)) * (image.quantization - 1)).astype(int)
